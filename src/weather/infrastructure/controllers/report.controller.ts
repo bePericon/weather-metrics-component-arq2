@@ -15,27 +15,27 @@ export class ReportController {
         this.reportService = new ReportService(weatherLoaderComponentClient, logger);
     }
 
-    // @Get('last-day')
-    // async GetLastDayTemperature(req: Request, res: Response): Promise<Response> {
-    //     const lastDayTemperature = await this.temperatureService.getLastDayTemperature(
-    //         req?.query?.city as string
-    //     );
+    @Get('last-day')
+    async GetLastDayTemperature(req: Request, res: Response): Promise<Response> {
+         const lastDayTemperature = await this.reportService.getLastDayTemperature(
+            req?.query?.city as string
+         );
 
-    //     return res
-    //         .status(StatusCodes.OK)
-    //         .json(new ApiResponse(`Temperaturas del ultimo dia encontradas`, StatusCodes.OK, lastDayTemperature));
-    // }
+        return res
+             .status(StatusCodes.OK)
+             .json(new ApiResponse(`Temperaturas del ultimo dia encontradas`, StatusCodes.OK, lastDayTemperature));
+     }
 
-    // @Get('last-week')
-    // async GetLastWeekTemperature(req: Request, res: Response): Promise<Response> {
-    //     const lastWeekTemperature = await this.temperatureService.getLastWeekTemperature(
-    //         req?.query?.city as string
-    //     );
+    @Get('last-week')
+    async GetLastWeekTemperature(req: Request, res: Response): Promise<Response> {
+         const lastWeekTemperature = await this.reportService.getLastWeekTemperature(
+             req?.query?.city as string
+         );
 
-    //     return res
-    //         .status(StatusCodes.OK)
-    //         .json(new ApiResponse(`Temperaturas de la ultima semana encontradas`, StatusCodes.OK, lastWeekTemperature));
-    // }
+         return res
+            .status(StatusCodes.OK)
+             .json(new ApiResponse(`Temperaturas de la ultima semana encontradas`, StatusCodes.OK, lastWeekTemperature));
+     }
 
     @Get('current-temperature')
     async GetCurrentTemperature(req: Request, res: Response): Promise<Response> {
