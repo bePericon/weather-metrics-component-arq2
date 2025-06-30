@@ -16,7 +16,8 @@
     "lint:fix": "eslint . --ext .ts --quiet --fix",
     "lint:all": "eslint . --ext .ts",
     "stop2": "npm run stop-server",
-    "stop-server": "kill-port --port 8080 || :"
+    "stop-server": "kill-port --port 8080 || :",
+    "test:report": "artillery run ./src/test/chargeTest.yml"
   },
   "author": "B. Emmanuel Pericon",
   "license": "ISC",

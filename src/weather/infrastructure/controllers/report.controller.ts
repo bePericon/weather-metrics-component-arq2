@@ -44,16 +44,6 @@ export class ReportController {
         );
 
         let response = null;
-        // if (!currentTemp) {
-        //     const loaded = await this.reportService.loadWeatherDataForCity(
-        //         req.query.city as string
-        //     );
-
-        //     // TODO: add redis
-        //     if (loaded)
-        //         response =
-        //             this.temperatureService.mapToTemperatureDtoFromWeatherData(loaded);
-        // } else 
         response = currentTemp;
 
         return res
