@@ -19,15 +19,13 @@ Using this technologies:
 
 - Run `npm install` to get the dependencies installed.
 
-- Run `docker run --name redis -p 6379:6379 redis` to create container of redis.
+- Run `docker compose up -d app --force-recreate` to create containers.
 
 ### Let's go!
 
 - Service:
-  - Server: [http://localhost:8080/api/temperature](http://localhost:8081/api/report)
-- Mongo client web: http://localhost:8081
-  - User: admin
-  - Password: pass
+  - Server: http://localhost:8082/api/report
+- Redis client web: http://localhost:8083
 
 
 Enjoy , thanks!
