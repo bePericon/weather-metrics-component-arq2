@@ -1,0 +1,73 @@
+services:
+    app:
+        container_name: wmc
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - '8082:8082'
+        volumes:
+            - .:/opt/app
+            - /opt/app/node_modules
+        depends_on:
+            - redis
+        labels:
+            logging: promtail-wmc
+            app: wmc
+        logging:
+            driver: 'json-file'
+            options:
+                max-size: '10m'
+                max-file: '3'
+        networks:
+            - wmc-network
+            - grafana-external
+            - wlc-external
+
+    redis:
+        image: redis:7-alpine
+        container_name: redis
+        ports:
+            - '6379:6379'
+        volumes:
+            - redis-data:/data
+        command: redis-server --save 60 1 --loglevel warning
+        networks:
+            - wmc-network
+
+    redis-commander:
+        image: rediscommander/redis-commander
+        container_name: redis-commander-wmc
+        environment:
+            - REDIS_HOSTS=local:redis:6379
+        ports:
+            - '8083:8081'
+        depends_on:
+            - redis
+        networks:
+            - wmc-network
+
+
+    promtail:
+        image: grafana/promtail:2.9.0
+        container_name: promtail-wmc
+        volumes:
+            - /var/lib/docker/containers:/var/lib/docker/containers:ro
+            - /var/log:/var/log
+            - ./promtail-config.yml:/etc/promtail/config.yml
+            - /var/run/docker.sock:/var/run/docker.sock
+        command: -config.file=/etc/promtail/config.yml
+        networks:
+            - wmc-network
+
+volumes:
+    redis-data:
+
+networks:
+    wmc-network:
+    grafana-external:
+        name: grafana_grafana
+        external: true
+    wlc-external:
+        name: wlc-app_wlc-network
+        external: true

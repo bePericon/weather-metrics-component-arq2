@@ -5,12 +5,18 @@ import cors from 'cors';
 import { IncomingMessage, ServerResponse } from 'http';
 import { corsOptions } from './config/cors';
 import customServer from 'express-promise-router';
-// import mongoose from 'mongoose';
-// import config from './config/config';
 import cookieParser from 'cookie-parser';
 import errorMiddleware from './shared/infrastructure/error.middleware';
 import logger from './config/logger';
 import { ReportController } from './weather/infrastructure/controllers/report.controller';
+import promClient from 'prom-client';
+import MetricsController from './weather/infrastructure/controllers/metrics.controller';
+
+declare module 'express-serve-static-core' {
+    interface Request {
+        metrics?: any;
+    }
+}
 
 export class ServerApp extends Server {
     constructor() {
@@ -25,11 +31,11 @@ export class ServerApp extends Server {
             next();
         });
 
+        this.setupMetrics();
+
         this.setupControllers();
 
         this.app.use(errorMiddleware);
-
-        // this.initConnectionDB();
     }
 
     private morganJsonFormat(
@@ -40,26 +46,54 @@ export class ServerApp extends Server {
         const status = tokens.status(req, res);
         const statusInfo = ['200', '201'];
 
-        return JSON.stringify({
-            date: tokens.date(req, res, 'iso'),
-            method: tokens.method(req, res),
-            url: tokens.url(req, res),
-            status: status,
-            response: `${tokens['response-time'](req, res)} ms`,
-            level: statusInfo.includes(status as string) ? 'INFO' : 'WARN',
+        const url = tokens.url(req, res);
+        if (url !== '/metrics') {
+            return JSON.stringify({
+                date: tokens.date(req, res, 'iso'),
+                method: tokens.method(req, res),
+                url: tokens.url(req, res),
+                status: status,
+                response: `${tokens['response-time'](req, res)} ms`,
+                level: statusInfo.includes(status as string) ? 'INFO' : 'WARN',
+            });
+        }
+    }
+
+    private setupMetrics(): void {
+        // Create a Registry to register the metrics
+        const register = new promClient.Registry();
+        register.setDefaultLabels({
+            app: 'wmc-app',
+        });
+        promClient.collectDefaultMetrics({ register });
+
+        const httpRequestTimer = new promClient.Histogram({
+            name: 'http_request_duration_ms',
+            help: 'Duration of HTTP requests in ms',
+            labelNames: ['method', 'route', 'code'],
+            // buckets for response time from 0.1ms to 1s
+            buckets: [0.1, 5, 15, 50, 100, 200, 300, 400, 500, 1000],
+        });
+        const requestCounter = new promClient.Counter({
+            name: 'http_requests_total',
+            help: 'Total number of HTTP requests',
+            labelNames: ['method', 'status_code'],
+        });
+
+        register.registerMetric(httpRequestTimer);
+        register.registerMetric(requestCounter);
+
+        this.app.use((req, res, next) => {
+            req.metrics = { register, httpRequestTimer, requestCounter };
+            next();
         });
     }
 
     private setupControllers(): void {
         const reportController = new ReportController(logger);
-        this.addControllers([reportController], customServer);
+        const metricsController = new MetricsController(logger);
+        this.addControllers([reportController, metricsController], customServer);
     }
-
-    // private async initConnectionDB(): Promise<void> {
-    //     const CONN_STR = config.db_connection_string as string;
-    //     const db = await mongoose.connect(CONN_STR);
-    //     logger.info(`[Server] Data base is connect: ${db.connection.name}`);
-    // }
 
     public getApp(): Application {
         return this.app;
