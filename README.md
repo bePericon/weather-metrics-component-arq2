@@ -19,7 +19,7 @@ Using this technologies:
 
 - Run `npm install` to get the dependencies installed.
 
-- Run `docker compose up -d app --force-recreate` to create containers.
+- Run `docker compose up -d wmc-app --force-recreate` to create containers.
 
 ### Let's go!
 
