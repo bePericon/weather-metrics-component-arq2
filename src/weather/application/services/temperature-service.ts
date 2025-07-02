@@ -7,6 +7,7 @@ import { ReportUseCase } from '../interfaces/report-use-case.interface';
 import { TemperatureDto } from '../dtos/temperature-dto';
 import { GetLastDayTemperatureUseCase } from '../../domain/uses-cases/get-last-day-temperature';
 import { GetLastWeekTemperatureUseCase } from '../../domain/uses-cases/get-last-week-temperature';
+import config from '../../../config/config';
 
 export class ReportService implements ReportUseCase {
   private readonly getCurrentTemperatureUseCase: GetCurrentTemperature;
@@ -21,20 +22,20 @@ export class ReportService implements ReportUseCase {
 
   async getCurrentTemperature(city: string): Promise<TemperatureDto | null> {
     const cacheKey = `current-temp:${city.toLowerCase()}`;
-    try {
-      const temperature = await this.getCurrentTemperatureUseCase.execute(city);
-      if (temperature) {
-        await redis.set(cacheKey, JSON.stringify(temperature), 'EX', 300); // TTL 5 min
-        return this.mapToTemperatureDto(temperature);
-      }
-    } catch (err) {
-      this.logger.warn(`[ReportService] Loader fallo para current-temperature, buscando en Redis`);
-    }
-
     const cached = await redis.get(cacheKey);
     if (cached) {
       this.logger.info(`[ReportService] Valor actual obtenido desde Redis`);
       return JSON.parse(cached);
+    }
+    
+    try {
+      const temperature = await this.getCurrentTemperatureUseCase.execute(city);
+      if (temperature) {
+        await redis.set(cacheKey, JSON.stringify(temperature), 'EX', config.ttl_redis_current_temp);
+        return this.mapToTemperatureDto(temperature);
+      }
+    } catch (err) {
+      this.logger.warn(`[ReportService] Loader fallo para current-temperature`);
     }
 
     this.logger.warn(`[ReportService] No se pudo obtener temperatura actual de ninguna fuente`);
@@ -43,6 +44,11 @@ export class ReportService implements ReportUseCase {
 
   async getLastDayTemperature(city: string): Promise<number | null> {
     const cacheKey = `last-day-temp:${city.toLowerCase()}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      this.logger.info(`[ReportService] Promedio dia obtenido desde Redis`);
+      return parseFloat(cached);
+    }
 
     try {
       const records = await this.getLastDayTemperatureUseCase.execute(city);
@@ -54,17 +60,11 @@ export class ReportService implements ReportUseCase {
       const result = parseFloat(avg.toFixed(2));
 
       this.logger.info(`[ReportService] Promedio ultimo dia (${city}): ${result}`);
-      await redis.set(cacheKey, result.toString(), 'EX', 1800); // TTL 30 min
+      await redis.set(cacheKey, result.toString(), 'EX', config.ttl_redis_last_day_temp);
 
       return result;
     } catch (err) {
       this.logger.warn(`[ReportService] Loader fallo para last-day, buscando en Redis`);
-    }
-
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      this.logger.info(`[ReportService] Promedio dia obtenido desde Redis`);
-      return parseFloat(cached);
     }
 
     this.logger.warn(`[ReportService] No se pudo obtener promedio del ultimo dia`);
@@ -73,6 +73,11 @@ export class ReportService implements ReportUseCase {
 
   async getLastWeekTemperature(city: string): Promise<number | null> {
     const cacheKey = `last-week-temp:${city.toLowerCase()}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      this.logger.info(`[ReportService] Promedio semana obtenido desde Redis`);
+      return parseFloat(cached);
+    }
 
     try {
       const records = await this.getLastWeekTemperatureUseCase.execute(city);
@@ -87,17 +92,11 @@ export class ReportService implements ReportUseCase {
       const result = parseFloat(avg.toFixed(2));
 
       this.logger.info(`[ReportService] Promedio ultima semana (${city}): ${result}`);
-      await redis.set(cacheKey, result.toString(), 'EX', 3600); // TTL 1 hora
+      await redis.set(cacheKey, result.toString(), 'EX', config.ttl_redis_last_week_temp);
 
       return result;
     } catch (err) {
       this.logger.warn(`[ReportService] Loader fallo para last-week, buscando en Redis`);
-    }
-
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      this.logger.info(`[ReportService] Promedio semana obtenido desde Redis`);
-      return parseFloat(cached);
     }
 
     this.logger.warn(`[ReportService] No se pudo obtener promedio de la ultima semana`);

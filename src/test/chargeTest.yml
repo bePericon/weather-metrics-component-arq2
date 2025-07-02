@@ -1,5 +1,5 @@
 config:
-  target: "http://localhost:8081"
+  target: "http://localhost:8082"
   phases:
     - duration: 60    # 1 minuto
       arrivalRate: 5  # 5 usuarios virtuales por segundo
