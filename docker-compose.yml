@@ -7,8 +7,8 @@ services:
         ports:
             - '8082:8082'
         volumes:
-            - .:/opt/app
-            - /opt/app/node_modules
+            - ./src:/opt/app/src
+            - ./package.json:/opt/app/package.json
         depends_on:
             - redis
         labels:
@@ -19,9 +19,10 @@ services:
             options:
                 max-size: '10m'
                 max-file: '3'
+        environment:
+            - OTEL_SERVICE_NAME="wmc"
         networks:
             - wmc-network
-            - grafana-external
             - wlc-external
 
     redis:
@@ -65,9 +66,6 @@ volumes:
 
 networks:
     wmc-network:
-    grafana-external:
-        name: grafana_grafana
-        external: true
     wlc-external:
         name: wlc-app_wlc-network
         external: true

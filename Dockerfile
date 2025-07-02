@@ -15,7 +15,7 @@ WORKDIR $HOME
 #Install dependencies from package.json
 COPY package.json $HOME
 COPY package-lock.json $HOME
-RUN npm install --quiet
+RUN npm install -f
 
 #Install globally nodemon to watch changes on realtime
 RUN npm install nodemon -g --quiet
@@ -28,8 +28,9 @@ COPY src/ $HOME/src
 COPY tsconfig.json $HOME
 COPY .env $HOME/.env
 
-RUN chown -R daemon $HOME
-USER daemon
+# RUN chown -R daemon $HOME
+# USER daemon
+USER node
 
 #Expose port 8080
 EXPOSE $PORT
